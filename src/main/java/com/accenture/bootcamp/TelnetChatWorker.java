@@ -16,12 +16,13 @@ import java.util.concurrent.ConcurrentLinkedQueue;
  *
  */
 public class TelnetChatWorker implements Runnable {
-    private Logger log = LoggerFactory.getLogger(TelnetChatWorker.class);
-    private Socket socket;
+    private final Logger log = LoggerFactory.getLogger(TelnetChatWorker.class);
+    private final Socket socket;
     PrintWriter out;
-    private ConcurrentLinkedQueue<String> messagesReceived=new ConcurrentLinkedQueue<>();
-    private ConcurrentHashMap<String,String> nicknames=new ConcurrentHashMap<>();
+    private final ConcurrentLinkedQueue<String> messagesReceived=new ConcurrentLinkedQueue<>();
 
+
+    private static final  ConcurrentHashMap<String,String> nicknames=new ConcurrentHashMap<>();
     private static List<TelnetChatWorker> workers =new ArrayList<TelnetChatWorker>();
 
     private TelnetChatWorker(Socket sock) {
