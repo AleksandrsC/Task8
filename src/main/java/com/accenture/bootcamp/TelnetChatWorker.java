@@ -8,6 +8,7 @@ import java.io.*;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
 /**
@@ -19,6 +20,7 @@ public class TelnetChatWorker implements Runnable {
     private Socket socket;
     PrintWriter out;
     private ConcurrentLinkedQueue<String> messagesReceived=new ConcurrentLinkedQueue<>();
+    private ConcurrentHashMap<String,String> nicknames=new ConcurrentHashMap<>();
 
     private static List<TelnetChatWorker> workers =new ArrayList<TelnetChatWorker>();
 
@@ -82,17 +84,34 @@ public class TelnetChatWorker implements Runnable {
     @Override
     public void run() {
         log.info("thread started.");
-        try (InputStream is = (socket.getInputStream())) {
+        try (InputStream is = (socket.getInputStream());) {
             out=new PrintWriter(socket.getOutputStream());
+            out.println("Welcome to TELNET demo chat. Type a message starting with 'Bye' to exit.");
+            out.println("Type '/nick <word>' to rename yourself.");
+            out.flush();
             Scanner scn = new Scanner(is);
-            String idString="[" + socket.getInetAddress() + ":" + socket.getPort()+ "]";
+            String idString=""+socket.getInetAddress() + ":" + socket.getPort();
             scn.useDelimiter("\\n");
             while (scn.hasNext()) {
-                broadcastMessage(idString + scn.next());
+                String nick="["+nicknames.getOrDefault(idString,idString)+"] ";
+                String chat=scn.next();
+                broadcastMessage(nick + chat);
+                if(chat.startsWith("Bye")){
+                    break;
+                }else if(chat.startsWith("/nick ")){
+                    log.info("nick change req.");
+                    Scanner nickScanner=new Scanner(chat);
+                    nickScanner.next(); // /nick itself
+                    String newNick=nickScanner.next();
+                    log.info("ID:"+idString+"nick:"+newNick);
+                    nicknames.put(idString, newNick);
+                    log.info("nicknames:"+nicknames);
+                }
             }
         } catch (IOException e) {
             log.error("server thread error:", e);
         }
+        out.close();
         workers.remove(this);
     }//run
 }
